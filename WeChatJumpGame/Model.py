@@ -11,6 +11,9 @@ class CoarseModel(object):
         self.dataDir = './Data'
         self.name_list = []
         self.get_name_list()
+        #print(self.name_list)
+        self.trainList = self.name_list[:1600]
+        self.valList = self.name_list[1600:]
         #==============================
         self.m = Sequential()
         self.m.add(Conv2D( 16,(3,3),input_shape = (640,720,3),strides = 2, padding = 'same', activation='relu',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
@@ -62,9 +65,9 @@ class CoarseModel(object):
 
         self.name_list = list(filter(_name_checker, self.name_list))
 
-    def nextBatch(self):
+    def nextBatch(self, fileList):
         while True:
-            batch_name = np.random.choice(self.name_list, self.batchSize)
+            batch_name = np.random.choice(fileList, self.batchSize)
             batch = {}
             for idx, name in enumerate(batch_name):
                 posi = name.index('_res')
@@ -88,21 +91,24 @@ class CoarseModel(object):
                     batch['img'] = np.concatenate((batch['img'], img_tmp), axis=0)
                     batch['label'] = np.concatenate((batch['label'], label_tmp), axis=0)
             yield (batch['img'],batch['label'])
-            #return (batch['img'],batch['label'])
-
+    #todo 参数 pickle_safe 。可能不能用类函数作回调。需要取消类封装
     def train(self):
-        self.m.fit_generator(self.nextBatch(), epochs = 1, steps_per_epoch = 100000,verbose = 2)
+        self.m.fit_generator(self.nextBatch(self.trainList), epochs = 10000, steps_per_epoch = 1,verbose = 2)
         self.m.save('CoarseModel.h5')
 
-    def predict(self,X):
-        return self.m.predict(X)
+    def evaluate(self):
+        self.m.evaluate_generator(self.nextBatch(self.valList), epochs = 1000, steps = 1, verbose = 2)
     
-class FineMode(object):
+
+class FineModel(object):
     def __init__(self, **kwargs):
         self.batchSize = 16
         self.dataDir = './Data'
         self.name_list = []
         self.get_name_list()
+        self.trainList = self.name_list[:1600]
+        self.valList = self.name_list[1600:]
+
         #=========
 
         self.m = Sequential()
@@ -146,9 +152,9 @@ class FineMode(object):
 
         self.name_list = list(filter(_name_checker, self.name_list))
 
-    def nextBatch(self):
+    def nextBatch(self,fileList):
         while True:
-            batch_name = np.random.choice(self.train_name_list, self.batchSize)
+            batch_name = np.random.choice(fileList, self.batchSize)
             batch = {}
             for idx, name in enumerate(batch_name):
                 posi = name.index('_res')
@@ -196,10 +202,21 @@ class FineMode(object):
         return self.m.predict(X)
 
     def train(self):
-        self.m.fit_generator(self.nextBatch(),epochs = 1, steps_per_epoch = 100000,verbose = 1)
+        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
         self.m.save('FineModel.h5')
+
+    def evaluate(self):
+        self.m.evaluate_generator(self.nextBatch(self.valList), epochs = 1000, steps = 1, verbose = 2)
+
 
 if __name__=="__main__":
     m = CoarseModel()
-    d = m.nextBatch()
     m.train()
+    m.evaluate()
+
+    m = FineModel()
+    m.train()
+    m.evaluate()
+
+    #d = m.nextBatch()
+    #m.train()
