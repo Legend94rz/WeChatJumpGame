@@ -7,15 +7,13 @@ import cv2
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
 
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.3
-config.gpu_options.allow_growth = True
+#config.gpu_options.allow_growth = True
 session = tf.Session(config = config)
 KTF.set_session(session)
-
-
 
 class CoarseModel(object):
     def __init__(self, **kwargs):
@@ -110,7 +108,7 @@ class CoarseModel(object):
         self.m = load_model('CoarseModel.h5')
 
     def evaluate(self):
-        self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000, verbose = 2)
+        print( self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000) )
     
 
 class FineModel(object):
@@ -121,33 +119,40 @@ class FineModel(object):
         self.get_name_list()
         self.trainList = self.name_list[:1600]
         self.valList = self.name_list[1600:]
-
         #=========
-
         self.m = Sequential()
         self.m.add(Conv2D(16,(3,3),input_shape = (320,320,3),strides = 2, padding = 'same',activation = 'relu',bias_initializer = 'constant', kernel_initializer = 'truncated_normal'))
-        self.m.add(Conv2D(64,(3,3),padding = 'same',bians_initializer = 'constant',kernel_initilizer = 'truncated_normal'))
+
+        self.m.add(Conv2D(64,(3,3),padding = 'same',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
+        self.m.add(BatchNormalization())
+        self.m.add(Activation('relu'))
         self.m.add(MaxPooling2D(pool_size = (2,2),strides = (2,2),padding = 'same'))
 
-        self.m.add(Conv2D(128,(5,5),padding = 'same',bians_initializer = 'constant',kernel_initilizer = 'truncated_normal'))
+        self.m.add(Conv2D(128,(5,5),padding = 'same',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
+        self.m.add(BatchNormalization())
+        self.m.add(Activation('relu'))
         self.m.add(MaxPooling2D(pool_size = (2,2),strides = (2,2),padding = 'same'))
 
-        self.m.add(Conv2D(256,(7,7),padding = 'same',bians_initializer = 'constant',kernel_initilizer = 'truncated_normal'))
+        self.m.add(Conv2D(256,(7,7),padding = 'same',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
+        self.m.add(BatchNormalization())
+        self.m.add(Activation('relu'))
         self.m.add(MaxPooling2D(pool_size = (2,2),strides = (2,2),padding = 'same'))
 
-        self.m.add(Conv2D(512,(9,9),padding = 'same',bians_initializer = 'constant',kernel_initilizer = 'truncated_normal'))
+        self.m.add(Conv2D(512,(9,9),padding = 'same',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
+        self.m.add(BatchNormalization())
+        self.m.add(Activation('relu'))
         self.m.add(MaxPooling2D(pool_size = (2,2),strides = (2,2),padding = 'same'))
 
         self.m.add(Flatten())
         self.m.add(Dense(512))
         self.m.add(Dense(2))
 
-        self.m.compile(optimizer = 'adam',loss = 'mse',metrics = ['accruacy'])
+        self.m.compile(optimizer = 'adam',loss = 'mse',metrics = ['accuracy'])
         #plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
 
     def get_name_list(self):
         for i in range(3, 10):
-            dir = os.path.join(self.data_dir, 'exp_%02d' % i)
+            dir = os.path.join(self.dataDir, 'exp_%02d' % i)
             this_name = os.listdir(dir)
             this_name = [os.path.join(dir, name) for name in this_name]
             self.name_list = self.name_list + this_name
@@ -215,12 +220,12 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
-        #self.m.save('FineModel.h5')
-        self.m = load_model('FineModel.h5')
+        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
+        self.m.save('FineModel.h5')
+        #self.m = load_model('FineModel.h5')
 
     def evaluate(self):
-        self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000, verbose = 2)
+        print(self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000))
 
 
 if __name__=="__main__":
@@ -235,7 +240,7 @@ if __name__=="__main__":
     try:
         m2.train()
         m2.evaluate()
-    except:
+    except KeyboardInterrupt:
         m2.m.save('CurrputFine.h5')
 
 
