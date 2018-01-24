@@ -1,9 +1,20 @@
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation, MaxPooling2D, Reshape, Flatten
-from keras.utils import plot_model
+#from keras.utils import plot_model
 import numpy as np
 import os
 import cv2
+import keras.backend.tensorflow_backend as KTF
+import tensorflow as tf
+
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.3
+config.gpu_options.allow_growth = True
+session = tf.Session(config = config)
+KTF.set_session(session)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
+
 
 class CoarseModel(object):
     def __init__(self, **kwargs):
@@ -43,7 +54,7 @@ class CoarseModel(object):
         self.m.add(Dense(2))
 
         self.m.compile(optimizer='adam',loss = 'mse',metrics = ['accuracy'])
-        plot_model(self.m,'CoarseModel.png',show_shapes = True,show_layer_names = True)
+        #plot_model(self.m,'CoarseModel.png',show_shapes = True,show_layer_names = True)
 
     def get_name_list(self):
         for i in range(3, 10):
@@ -130,7 +141,7 @@ class FineModel(object):
         self.m.add(Dense(2))
 
         self.m.compile(optimizer = 'adam',loss = 'mse',metrics = ['accruacy'])
-        plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
+        #plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
 
     def get_name_list(self):
         for i in range(3, 10):
