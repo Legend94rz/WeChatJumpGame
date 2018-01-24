@@ -7,13 +7,14 @@ import cv2
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
+
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.3
 config.gpu_options.allow_growth = True
 session = tf.Session(config = config)
 KTF.set_session(session)
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
 
 
 class CoarseModel(object):
@@ -104,11 +105,12 @@ class CoarseModel(object):
             yield (batch['img'],batch['label'])
     #todo 参数 pickle_safe 。可能不能用类函数作回调。需要取消类封装
     def train(self):
-        self.m.fit_generator(self.nextBatch(self.trainList), epochs = 10000, steps_per_epoch = 1,verbose = 2)
-        self.m.save('CoarseModel.h5')
+        #self.m.fit_generator(self.nextBatch(self.trainList), epochs = 10000, steps_per_epoch = 1,verbose = 2)
+        #self.m.save('CoarseModel.h5')
+        self.m = load_model('CoarseModel.h5')
 
     def evaluate(self):
-        self.m.evaluate_generator(self.nextBatch(self.valList), epochs = 1000, steps = 1, verbose = 2)
+        self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000, verbose = 2)
     
 
 class FineModel(object):
@@ -213,21 +215,29 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
-        self.m.save('FineModel.h5')
+        #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
+        #self.m.save('FineModel.h5')
+        self.m = load_model('FineModel.h5')
 
     def evaluate(self):
-        self.m.evaluate_generator(self.nextBatch(self.valList), epochs = 1000, steps = 1, verbose = 2)
+        self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000, verbose = 2)
 
 
 if __name__=="__main__":
-    m = CoarseModel()
-    m.train()
-    m.evaluate()
+    m1 = CoarseModel()
+    m2 = FineModel()
+    try:
+        m1.train()
+        m1.evaluate()
+    except KeyboardInterrupt:
+        m1.m.save('CurrputCoarse.h5')
 
-    m = FineModel()
-    m.train()
-    m.evaluate()
+    try:
+        m2.train()
+        m2.evaluate()
+    except:
+        m2.m.save('CurrputFine.h5')
+
 
     #d = m.nextBatch()
     #m.train()
