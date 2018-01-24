@@ -76,8 +76,8 @@ if __name__=="__main__":
     s = findStartLocation(src,template)
     t = findTargetLocation(src)
     print(s,t)
-    cv2.circle(src,s[0],3,(255,0,0),-1)
-    cv2.circle(src,t,3,(0,255,0),-1)
+    cv2.circle(src,tuple(s[0]),3,(255,0,0),-1)
+    cv2.circle(src,tuple(t),3,(0,255,0),-1)
 
     cv2.namedWindow('1',cv2.WINDOW_NORMAL)
     cv2.imshow('1',src)

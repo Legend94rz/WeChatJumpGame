@@ -7,13 +7,17 @@ import cv2
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
 
-#os.environ['CUDA_VISIBLE_DEVICES'] = '1,10'
-
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.3
-#config.gpu_options.allow_growth = True
 session = tf.Session(config = config)
 KTF.set_session(session)
+
+#def initFileList
+
+#def genFineImg
+
+#def genCoarseImg
+
 
 class CoarseModel(object):
     def __init__(self, **kwargs):
@@ -223,9 +227,9 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 2)
-        self.m.save_weights('FineModelWeights.h5')
-        #self.m.load_weights('FineModelWeights.h5')
+        #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 2)
+        #self.m.save_weights('FineModelWeights.h5')
+        self.m.load_weights('FineModelWeights.h5')
 
     def evaluate(self):
         print(self.m.metrics_names)
