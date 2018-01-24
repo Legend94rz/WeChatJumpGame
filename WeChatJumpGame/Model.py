@@ -104,12 +104,15 @@ class CoarseModel(object):
     #todo 参数 pickle_safe 。可能不能用类函数作回调。需要取消类封装
     def train(self):
         #self.m.fit_generator(self.nextBatch(self.trainList), epochs = 10000, steps_per_epoch = 1,verbose = 2)
-        #self.m.save('CoarseModel.h5')
-        self.m = load_model('CoarseModel.h5')
+        #self.m.save('CoarseModelWeights.h5')
+        self.m.load_weights('CoarseModelWeights.h5')
 
     def evaluate(self):
+        print(self.m.metrics_names)
         print( self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000) )
     
+    def predict(self,X):
+        return self.m.predict(X)
 
 class FineModel(object):
     def __init__(self, **kwargs):
@@ -220,11 +223,12 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 1)
-        self.m.save('FineModel.h5')
-        #self.m = load_model('FineModel.h5')
+        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 2)
+        self.m.save_weights('FineModelWeights.h5')
+        #self.m.load_weights('FineModelWeights.h5')
 
     def evaluate(self):
+        print(self.m.metrics_names)
         print(self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000))
 
 
@@ -242,7 +246,3 @@ if __name__=="__main__":
         m2.evaluate()
     except KeyboardInterrupt:
         m2.m.save('CurrputFine.h5')
-
-
-    #d = m.nextBatch()
-    #m.train()
