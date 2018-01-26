@@ -12,8 +12,29 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.3
 session = tf.Session(config = config)
 KTF.set_session(session)
 
-#def initFileList
+dataDir = './Data'
 
+def initFileList():
+    fileList = []
+    for i in range(3, 10):
+        dir = os.path.join(dataDir, 'exp_%02d' % i)
+        this_name = os.listdir(dir)
+        this_name = [os.path.join(dir, name) for name in this_name]
+        fileList = fileList + this_name
+    name_list_raw = fileList
+    def _name_checker(name):
+        posi = name.index('_res')
+        img_name = name[:posi] + '.png'
+        if img_name in name_list_raw:
+            return True
+        else:
+            return False
+
+    fileList = list(filter(lambda name: 'res' in name, fileList))
+    fileList = list(filter(_name_checker, fileList))
+    return fileList
+
+fileList = initFileList()
 #def genFineImg
 
 #def genCoarseImg
@@ -22,15 +43,11 @@ KTF.set_session(session)
 class CoarseModel(object):
     def __init__(self, **kwargs):
         self.batchSize = 16
-        self.dataDir = './Data'
-        self.name_list = []
-        self.get_name_list()
-        #print(self.name_list)
-        self.trainList = self.name_list[:1600]
-        self.valList = self.name_list[1600:]
+        self.valList = fileList[:200]
+        self.trainList = fileList[200:]
         #==============================
         self.m = Sequential()
-        self.m.add(Conv2D( 16,(3,3),input_shape = (640,720,3),strides = 2, padding = 'same', activation='relu',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
+        self.m.add(Conv2D(16,(3,3),input_shape = (640,720,3),strides = 2, padding = 'same', activation='relu',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
 
         self.m.add(Conv2D(32,(3,3),padding = 'same',bias_initializer = 'constant',kernel_initializer = 'truncated_normal'))
         self.m.add(BatchNormalization())
@@ -59,26 +76,6 @@ class CoarseModel(object):
         self.m.compile(optimizer='adam',loss = 'mse',metrics = ['accuracy'])
         #plot_model(self.m,'CoarseModel.png',show_shapes = True,show_layer_names = True)
 
-    def get_name_list(self):
-        for i in range(3, 10):
-            dir = os.path.join(self.dataDir, 'exp_%02d' % i)
-            this_name = os.listdir(dir)
-            this_name = [os.path.join(dir, name) for name in this_name]
-            self.name_list = self.name_list + this_name
-        self.name_list_raw = self.name_list
-        self.name_list = filter(lambda name: 'res' in name, self.name_list)
-        self.name_list = list(self.name_list)
-
-        def _name_checker(name):
-            posi = name.index('_res')
-            img_name = name[:posi] + '.png'
-            if img_name in self.name_list_raw:
-                return True
-            else:
-                return False
-
-        self.name_list = list(filter(_name_checker, self.name_list))
-
     def nextBatch(self, fileList):
         while True:
             batch_name = np.random.choice(fileList, self.batchSize)
@@ -105,11 +102,11 @@ class CoarseModel(object):
                     batch['img'] = np.concatenate((batch['img'], img_tmp), axis=0)
                     batch['label'] = np.concatenate((batch['label'], label_tmp), axis=0)
             yield (batch['img'],batch['label'])
-    #todo 参数 pickle_safe 。可能不能用类函数作回调。需要取消类封装
+    
     def train(self):
-        #self.m.fit_generator(self.nextBatch(self.trainList), epochs = 10000, steps_per_epoch = 1,verbose = 2)
-        #self.m.save('CoarseModelWeights.h5')
-        self.m.load_weights('CoarseModelWeights.h5')
+        #self.m.load_weights('CoarseModelWeights.h5')
+        self.m.fit_generator(self.nextBatch(self.trainList), epochs = 100000, steps_per_epoch = 1, verbose = 2)
+        self.m.save_weights('CoarseModelWeights.h5')
 
     def evaluate(self):
         print(self.m.metrics_names)
@@ -121,11 +118,8 @@ class CoarseModel(object):
 class FineModel(object):
     def __init__(self, **kwargs):
         self.batchSize = 16
-        self.dataDir = './Data'
-        self.name_list = []
-        self.get_name_list()
-        self.trainList = self.name_list[:1600]
-        self.valList = self.name_list[1600:]
+        self.valList = fileList[:200]
+        self.trainList = fileList[200:]
         #=========
         self.m = Sequential()
         self.m.add(Conv2D(16,(3,3),input_shape = (320,320,3),strides = 2, padding = 'same',activation = 'relu',bias_initializer = 'constant', kernel_initializer = 'truncated_normal'))
@@ -156,26 +150,6 @@ class FineModel(object):
 
         self.m.compile(optimizer = 'adam',loss = 'mse',metrics = ['accuracy'])
         #plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
-
-    def get_name_list(self):
-        for i in range(3, 10):
-            dir = os.path.join(self.dataDir, 'exp_%02d' % i)
-            this_name = os.listdir(dir)
-            this_name = [os.path.join(dir, name) for name in this_name]
-            self.name_list = self.name_list + this_name
-        self.name_list_raw = self.name_list
-        self.name_list = filter(lambda name: 'res' in name, self.name_list)
-        self.name_list = list(self.name_list)
-
-        def _name_checker(name):
-            posi = name.index('_res')
-            img_name = name[:posi] + '.png'
-            if img_name in self.name_list_raw:
-                return True
-            else:
-                return False
-
-        self.name_list = list(filter(_name_checker, self.name_list))
 
     def nextBatch(self,fileList):
         while True:
@@ -227,9 +201,9 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 10000, steps_per_epoch = 1,verbose = 2)
-        #self.m.save_weights('FineModelWeights.h5')
-        self.m.load_weights('FineModelWeights.h5')
+        #self.m.load_weights('FineModelWeights.h5')
+        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
+        self.m.save_weights('FineModelWeights.h5')
 
     def evaluate(self):
         print(self.m.metrics_names)
@@ -241,12 +215,12 @@ if __name__=="__main__":
     m2 = FineModel()
     try:
         m1.train()
-        m1.evaluate()
+        #m1.evaluate()
     except KeyboardInterrupt:
         m1.m.save('CurrputCoarse.h5')
 
     try:
         m2.train()
-        m2.evaluate()
+        #m2.evaluate()
     except KeyboardInterrupt:
         m2.m.save('CurrputFine.h5')

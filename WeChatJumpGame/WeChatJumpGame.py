@@ -6,8 +6,9 @@ import numpy as np
 from Model import CoarseModel, FineModel
 
 SCREENSHOT_WAY = 2
-capFileName = 'cap.png'
-chessFileName = 'chess.png'
+capFileName = 'cap2.png'
+chessFileName = 'chess-sm.png'
+chessCenterOff = [25,125]
 
 def pull_screenshot():
     """
@@ -51,8 +52,9 @@ def findTargetLocation(src):
     m2 = FineModel()
     m2.train()
 
-    out1 = m1.predict(np.expand_dims( src[320:-320], 0))
+    out1 = m1.predict(np.expand_dims( src[320:-320,:,:], 0))
     coarPos = out1[0].astype(int)
+    print('coarPos: ',coarPos)
 
     x1 = coarPos[0]-160
     x2 = coarPos[0]+160
@@ -66,6 +68,7 @@ def findTargetLocation(src):
         y1 = y2 - 320
     fineImg = src[x1:x2,y1:y2,:]
     out2 = m2.predict(np.expand_dims(fineImg,0))
+    print('Fine Pos: ',out2)
     return np.array([x1,y1]) + out2[0].astype(int)
 
 if __name__=="__main__":
@@ -75,9 +78,22 @@ if __name__=="__main__":
     src = preprocess(src)
     s = findStartLocation(src,template)
     t = findTargetLocation(src)
-    print(s,t)
-    cv2.circle(src,tuple(s[0]),3,(255,0,0),-1)
+    cv2.circle(src,tuple(s[0]+chessCenterOff), 3,(255,0,0),-1)
     cv2.circle(src,tuple(t),3,(0,255,0),-1)
+
+    #m = CoarseModel()
+    #m.train()
+    #S = m.nextBatch(m.trainList)
+    #x,y = S[0],S[1]
+    #yp = m.predict(x)
+    #for i in range(len(y)):
+    #    print(y[i], yp[i], np.abs( y[i]-yp[i] ))
+    #print('###########')
+    #S = m.nextBatch(m.valList)
+    #x,y = S[0],S[1]
+    #yp = m.predict(x)
+    #for i in range(len(y)):
+    #    print(y[i], yp[i], np.abs( y[i]-yp[i] ))
 
     cv2.namedWindow('1',cv2.WINDOW_NORMAL)
     cv2.imshow('1',src)
