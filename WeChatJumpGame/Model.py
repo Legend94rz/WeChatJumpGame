@@ -104,9 +104,9 @@ class CoarseModel(object):
             yield (batch['img'],batch['label'])
     
     def train(self):
-        #self.m.load_weights('CoarseModelWeights.h5')
-        self.m.fit_generator(self.nextBatch(self.trainList), epochs = 100000, steps_per_epoch = 1, verbose = 2)
-        self.m.save_weights('CoarseModelWeights.h5')
+        self.m.load_weights('CoarseModelWeights.h5')
+        #self.m.fit_generator(self.nextBatch(self.trainList), epochs = 100000, steps_per_epoch = 1, verbose = 2)
+        #self.m.save_weights('CoarseModelWeights.h5')
 
     def evaluate(self):
         print(self.m.metrics_names)
@@ -201,9 +201,9 @@ class FineModel(object):
         return self.m.predict(X)
 
     def train(self):
-        #self.m.load_weights('FineModelWeights.h5')
-        self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
-        self.m.save_weights('FineModelWeights.h5')
+        self.m.load_weights('FineModelWeights.h5')
+        #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
+        #self.m.save_weights('FineModelWeights.h5')
 
     def evaluate(self):
         print(self.m.metrics_names)
