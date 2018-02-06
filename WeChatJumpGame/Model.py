@@ -1,8 +1,9 @@
+import os
+os.environ['CUDA_VISIBLE_DEVICES']='-1'
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation, MaxPooling2D, Reshape, Flatten
 #from keras.utils import plot_model
 import numpy as np
-import os
 import cv2
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf

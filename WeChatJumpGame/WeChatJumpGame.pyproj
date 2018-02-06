@@ -21,6 +21,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LinearResidual.py" />
     <Compile Include="Model.py">
       <SubType>Code</SubType>
     </Compile>
