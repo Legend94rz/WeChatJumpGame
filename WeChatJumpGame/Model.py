@@ -1,17 +1,18 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='-1'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+import keras.backend as K
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.3
+session = tf.Session(config = config)
+K.set_session(session)
+
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation, MaxPooling2D, Reshape, Flatten
 #from keras.utils import plot_model
 import numpy as np
 import cv2
-import keras.backend.tensorflow_backend as KTF
-import tensorflow as tf
 
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.3
-session = tf.Session(config = config)
-KTF.set_session(session)
 
 dataDir = './Data'
 
@@ -210,18 +211,15 @@ class FineModel(object):
         print(self.m.metrics_names)
         print(self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000))
 
-
 if __name__=="__main__":
     m1 = CoarseModel()
     m2 = FineModel()
     try:
         m1.train()
-        #m1.evaluate()
     except KeyboardInterrupt:
         m1.m.save('CurrputCoarse.h5')
 
     try:
         m2.train()
-        #m2.evaluate()
     except KeyboardInterrupt:
         m2.m.save('CurrputFine.h5')

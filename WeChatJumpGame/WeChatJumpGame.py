@@ -1,10 +1,8 @@
 import os
 import matplotlib.pyplot as plt
 import subprocess
-#todo: 添加命令行
 #todo: 优化nextBatch的stack，并重构
 #todo: 删除Data中不必要的图片，并优化initFileList
-
 import cv2
 import numpy as np
 from Model import CoarseModel, FineModel
@@ -20,16 +18,23 @@ m1 = CoarseModel()
 m2 = FineModel()
 
 def getDistance(s,t):
-    print(s,t)
-    return np.linalg.norm(np.array(s)-np.array( t ));
+    if t[0]<s[0]:       #往左跳
+        k=1/np.sqrt(3)
+        b1 = t[1]-k*t[0]
+        b2 = s[1]-k*s[0]
+    else:
+        k=-1/np.sqrt(3)
+        b1=t[1]+k*t[0]
+        b2=s[1]+k*s[0]
 
+    print(s,t)
+    return np.abs(b1-b2)/(4/3)
 
 def pull_screenshot():
     """
     获取屏幕截图，目前有 0 1 2 3 四种方法，未来添加新的平台监测方法时，
     可根据效率及适用性由高到低排序
     """
-    global SCREENSHOT_WAY
     if 1 <= SCREENSHOT_WAY <= 3:
         process = subprocess.Popen('adb shell screencap -p', shell=True, stdout=subprocess.PIPE)
         binary_screenshot = process.stdout.read()
@@ -37,21 +42,21 @@ def pull_screenshot():
         with open(capFileName, 'wb') as f:
             f.write(binary_screenshot)
     elif SCREENSHOT_WAY == 0:
-        os.system('adb shell screencap -p /sdcard/'+capFileName)
-        os.system('adb pull /sdcard/'+capFileName+' .')
+        os.system('adb shell screencap -p /sdcard/' + capFileName)
+        os.system('adb pull /sdcard/' + capFileName + ' .')
 
 def preprocess(src):
     resolution = src.shape[:2]
     scale = resolution[1] / 720.
-    src = cv2.resize( src, (720, int(src.shape[0]/scale)),interpolation = cv2.INTER_NEAREST)
-    if src.shape[0]>1280:
+    src = cv2.resize(src, (720, int(src.shape[0] / scale)),interpolation = cv2.INTER_NEAREST)
+    if src.shape[0] > 1280:
         s = (src.shape[0] - 1280) // 2
-        src = src[ s:(s+1280) ,:,:]
-    elif src.shape[0]<1280:
-        s1 = (1280-src.shape[0])//2
-        s2 = (1280-src.shape[0]) - s1
-        pad1 = 255*np.ones((s1,720,3),dtype = np.uint8)
-        pad2 = 255*np.ones((s2,720,3),dtype = np.uint8)
+        src = src[s:(s + 1280) ,:,:]
+    elif src.shape[0] < 1280:
+        s1 = (1280 - src.shape[0]) // 2
+        s2 = (1280 - src.shape[0]) - s1
+        pad1 = 255 * np.ones((s1,720,3),dtype = np.uint8)
+        pad2 = 255 * np.ones((s2,720,3),dtype = np.uint8)
         src = np.concatenate((pad1,src,pad2),0)
     return src
 
@@ -59,20 +64,20 @@ def findStartLocation(src,template):
     result = cv2.matchTemplate(src,template,cv2.TM_CCOEFF_NORMED)
     loc = cv2.minMaxLoc(result)
     s = loc[-1]
-    return (s[0]+chessCenterOff[0],s[1]+chessCenterOff[1]), loc[1]
+    return (s[0] + chessCenterOff[0],s[1] + chessCenterOff[1]), loc[1]
 
 def findTargetLocation(src):
-    out1 = m1.predict(np.expand_dims( src[320:-320,:,:], 0))
+    out1 = m1.predict(np.expand_dims(src[320:-320,:,:], 0))
     coarPos = out1[0].astype(int)
 
-    x1 = coarPos[0]-160
-    x2 = coarPos[0]+160
-    y1 = coarPos[1]-160
-    y2 = coarPos[1]+160
-    if y1<0:
+    x1 = coarPos[0] - 160
+    x2 = coarPos[0] + 160
+    y1 = coarPos[1] - 160
+    y2 = coarPos[1] + 160
+    if y1 < 0:
         y1 = 0
-        y2 =320
-    if y2>src.shape[1]:
+        y2 = 320
+    if y2 > src.shape[1]:
         y2 = src.shape[1]
         y1 = y2 - 320
     fineImg = src[x1:x2,y1:y2,:]
@@ -81,7 +86,7 @@ def findTargetLocation(src):
     return (out2[1],out2[0])
 
 def extractShoutcut(src,p,w,h):
-    return src[p[1]-h//2:p[1]+h//2, p[0]-w//2:p[0]+w//2, :]
+    return src[p[1] - h // 2:p[1] + h // 2, p[0] - w // 2:p[0] + w // 2, :]
 
 def getResidual(src, template):
     print(src.shape,template.shape)
@@ -91,24 +96,15 @@ def getResidual(src, template):
         return np.Infinity
     loc = cv2.minMaxLoc(result)
     p = loc[-1]
-    s = (src.shape[1]//2 , src.shape[0]//2)                         #棋子位置
-    t = (p[0] + template.shape[1]//2, p[1] + template.shape[0]//2)  #实际目标位置
+    s = (src.shape[1] // 2 , src.shape[0] // 2)                         #棋子位置
+    t = (p[0] + template.shape[1] // 2, p[1] + template.shape[0] // 2)  #实际目标位置
     a = getDistance(s,t)
-    #cv2.rectangle(src,tuple(p),(p[0]+template.shape[1],p[1]+template.shape[0]),(255,0,0),1)
-    #cv2.circle(src,s,3,(255,0,0),-1)
-    #cv2.circle(src,t,3,(0,255,0),-1)
-    #cv2.imshow('1',src)
-    #cv2.imshow('2',template)
-    #cv2.waitKey(0)
-    if t[1]<s[1]:
+    if t[1] < s[1]:
         return -a
-    return a;
+    return a
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     template = cv2.imread(chessFileName)
-    #cv2.namedWindow('1',cv2.WINDOW_NORMAL)
-    #cv2.namedWindow('2',cv2.WINDOW_NORMAL)
     resm = PressTimerCalculator()
     I = 0
     m1.train()
@@ -117,31 +113,28 @@ if __name__=="__main__":
         pull_screenshot()
         src = cv2.imread(capFileName)
         src = preprocess(src)
-        pressX, pressY = int(0.82*src.shape[0]), int(src.shape[1]/2)
+        pressX, pressY = int(0.8 * src.shape[0])+np.random.randint(-20,20), int(src.shape[1]//2)+np.random.randint(-20,20)
         s,confidence = findStartLocation(src,template)
         print('======================================')
-        print('source loc: %r, confidence: %r'%(s,confidence))
+        print('source loc: %r, confidence: %r' % (s,confidence))
         if confidence > 0.6:
-            print('Jump: %d'%I)
+            print('Jump: %d' % I)
             t = findTargetLocation(src)
             #todo hard code
             scS = extractShoutcut(src,s,320,200)
-            if I>0:
+            if I > 0 and resm.canAdd():
                 res = getResidual(scS,scT)
-                if res<=40:
+                if abs(res) <= 70:
                     resm.add(getDistance(olds,oldt),res)
             scT = extractShoutcut(src,t,180,150)
             tm = resm.predict(getDistance(s,t))
-            os.system('adb shell input swipe %d %d %d %d %d'%(pressX,pressY,pressX,pressY,tm))
-            #cv2.circle(src, s, 3,(255,0,0),-1)
-            #cv2.circle(src, t, 3,(0,255,0),-1)
-            #cv2.imshow('1',src)
-            #cv2.imshow('2',sc)
+            os.system('adb shell input swipe %d %d %d %d %d' % (pressX,pressY,pressX,pressY,tm))
             olds,oldt = s,t
-            I=I+1
+            I = I + 1
         else:
             pressX,pressY = 564,1593
-            os.system('adb shell input tap %d %d '%(pressX,pressY))
+            os.system('adb shell input tap %d %d ' % (pressX,pressY))
             I = 0
-        #cv2.waitKey(3000)
+            resm = PressTimerCalculator()
         time.sleep(1)
+        #time.sleep(1+np.random.ranf()*2)

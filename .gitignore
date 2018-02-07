@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 *.png
 *.h5
+*.csv
