@@ -1,5 +1,5 @@
 import os
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import keras.backend as K
 import tensorflow as tf
 config = tf.ConfigProto()
@@ -9,13 +9,11 @@ K.set_session(session)
 
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation, MaxPooling2D, Reshape, Flatten
-#from keras.utils import plot_model
 import numpy as np
 import cv2
 
 
 dataDir = './Data'
-
 def initFileList():
     fileList = []
     for i in range(3, 10):
@@ -23,24 +21,12 @@ def initFileList():
         this_name = os.listdir(dir)
         this_name = [os.path.join(dir, name) for name in this_name]
         fileList = fileList + this_name
-    name_list_raw = fileList
-    def _name_checker(name):
-        posi = name.index('_res')
-        img_name = name[:posi] + '.png'
-        if img_name in name_list_raw:
-            return True
-        else:
-            return False
-
     fileList = list(filter(lambda name: 'res' in name, fileList))
-    fileList = list(filter(_name_checker, fileList))
     return fileList
-
 fileList = initFileList()
 #def genFineImg
 
 #def genCoarseImg
-
 
 class CoarseModel(object):
     def __init__(self, **kwargs):
@@ -81,7 +67,7 @@ class CoarseModel(object):
     def nextBatch(self, fileList):
         while True:
             batch_name = np.random.choice(fileList, self.batchSize)
-            batch = {}
+            batch = {'img':np.array([]).reshape((0,640,720,3)),'label':np.array([]).reshape((0,2))}
             for idx, name in enumerate(batch_name):
                 posi = name.index('_res')
                 img_name = name[:posi] + '.png'
@@ -95,24 +81,14 @@ class CoarseModel(object):
                 mask3 = (img[:, :, 2] == 245)
                 mask = mask1 * mask2 * mask3
                 img[mask] = img[x - 320 + 10, y + 14, :]
-                if idx == 0:
-                    batch['img'] = img[np.newaxis, :, :, :]
-                    batch['label'] = label.reshape([1, label.shape[0]])
-                else:
-                    img_tmp = img[np.newaxis, :, :, :]
-                    label_tmp = label.reshape((1, label.shape[0]))
-                    batch['img'] = np.concatenate((batch['img'], img_tmp), axis=0)
-                    batch['label'] = np.concatenate((batch['label'], label_tmp), axis=0)
+                batch['img'] = np.concatenate((batch['img'], img[np.newaxis, :, :, :]), axis=0)
+                batch['label'] = np.concatenate((batch['label'], label.reshape([1, label.shape[0]])), axis=0)
             yield (batch['img'],batch['label'])
     
     def train(self):
         self.m.load_weights('CoarseModelWeights.h5')
         #self.m.fit_generator(self.nextBatch(self.trainList), epochs = 100000, steps_per_epoch = 1, verbose = 2)
         #self.m.save_weights('CoarseModelWeights.h5')
-
-    def evaluate(self):
-        print(self.m.metrics_names)
-        print( self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000) )
     
     def predict(self,X):
         return self.m.predict(X)
@@ -156,14 +132,13 @@ class FineModel(object):
     def nextBatch(self,fileList):
         while True:
             batch_name = np.random.choice(fileList, self.batchSize)
-            batch = {}
+            batch = {'img':np.array([]).reshape((0,320,320,3)),'label':np.array([]).reshape((0,2))}
             for idx, name in enumerate(batch_name):
                 posi = name.index('_res')
                 img_name = name[:posi] + '.png'
                 x, y = name[name.index('_h_') + 3: name.index('_h_') + 6], name[name.index('_w_') + 3: name.index('_w_') + 6]
                 x, y = int(x), int(y)
                 img = cv2.imread(img_name)
-                # img = img[320: -320, :, :]
                 mask1 = (img[:, :, 0] == 245)
                 mask2 = (img[:, :, 1] == 245)
                 mask3 = (img[:, :, 2] == 245)
@@ -189,14 +164,8 @@ class FineModel(object):
                 img = img[x1: x2, y1: y2, :]
                 label = np.array([x, y], dtype=np.float32)
 
-                if idx == 0:
-                    batch['img'] = img[np.newaxis, :, :, :]
-                    batch['label'] = label.reshape([1, label.shape[0]])
-                else:
-                    img_tmp = img[np.newaxis, :, :, :]
-                    label_tmp = label.reshape((1, label.shape[0]))
-                    batch['img'] = np.concatenate((batch['img'], img_tmp), axis=0)
-                    batch['label'] = np.concatenate((batch['label'], label_tmp), axis=0)
+                batch['img'] = np.concatenate((batch['img'], img[np.newaxis, :, :, :]), axis=0)
+                batch['label'] = np.concatenate((batch['label'], label.reshape((1, label.shape[0]))), axis=0)
             yield (batch['img'],batch['label'])
 
     def predict(self,X):
@@ -207,19 +176,11 @@ class FineModel(object):
         #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
         #self.m.save_weights('FineModelWeights.h5')
 
-    def evaluate(self):
-        print(self.m.metrics_names)
-        print(self.m.evaluate_generator(self.nextBatch(self.valList), steps = 1000))
-
 if __name__=="__main__":
     m1 = CoarseModel()
-    m2 = FineModel()
-    try:
-        m1.train()
-    except KeyboardInterrupt:
-        m1.m.save('CurrputCoarse.h5')
-
-    try:
-        m2.train()
-    except KeyboardInterrupt:
-        m2.m.save('CurrputFine.h5')
+    i=0
+    for f in m1.nextBatch(fileList):
+        i=i+1
+        if i>3:
+            break
+    pass
