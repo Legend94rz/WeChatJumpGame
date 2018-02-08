@@ -18,17 +18,8 @@ m1 = CoarseModel()
 m2 = FineModel()
 
 def getDistance(s,t):
-    if t[0]<s[0]:       #往左跳
-        k=1/np.sqrt(3)
-        b1 = t[1]-k*t[0]
-        b2 = s[1]-k*s[0]
-    else:
-        k=-1/np.sqrt(3)
-        b1=t[1]+k*t[0]
-        b2=s[1]+k*s[0]
-
     print(s,t)
-    return np.abs(b1-b2)/(4/3)
+    return np.linalg.norm(np.array(s)-np.array( t ));
 
 def pull_screenshot():
     """
@@ -121,15 +112,15 @@ if __name__ == "__main__":
             print('Jump: %d' % I)
             t = findTargetLocation(src)
             #todo hard code
-            scS = extractShoutcut(src,s,320,200)
+            scS = extractShoutcut(src,s,320,300)
             if I > 0 and resm.canAdd():
                 res = getResidual(scS,scT)
-                if abs(res) <= 70:
-                    resm.add(getDistance(olds,oldt),res)
-            scT = extractShoutcut(src,t,180,150)
+                if abs(res) <= 50:
+                    resm.add(getDistance(olds,oldt),res,oldtm)
+            scT = extractShoutcut(src,t,180,200)
             tm = resm.predict(getDistance(s,t))
             os.system('adb shell input swipe %d %d %d %d %d' % (pressX,pressY,pressX,pressY,tm))
-            olds,oldt = s,t
+            olds,oldt,oldtm = s,t,tm
             I = I + 1
         else:
             pressX,pressY = 564,1593

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 class PressTimerCalculator(object):
-    K = 2.5
+    K = 2.23
     def __init__(self, **kwargs):
         self.X = []
         self.Y = []
@@ -18,7 +18,7 @@ class PressTimerCalculator(object):
         df['residual'] = np.array(self.Y).reshape((-1,))
         df.to_csv('linear%d.csv'%len(self.m))
 
-    def add(self, dist,residual):
+    def add(self, dist,residual,tm):
         self.X.append([dist])
         self.Y.append([residual*self.K])
         print('add %r %r'%(dist,residual))
