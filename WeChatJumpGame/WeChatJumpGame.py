@@ -13,6 +13,7 @@ from LinearResidual import PressTimerCalculator
 SCREENSHOT_WAY = 2
 capFileName = 'cap.png'
 chessFileName = 'chess-sm.png'
+backupPreScreen = True
 chessCenterOff = [25,125]
 m1 = CoarseModel()
 m2 = FineModel()
@@ -26,6 +27,8 @@ def pull_screenshot():
     获取屏幕截图，目前有 0 1 2 3 四种方法，未来添加新的平台监测方法时，
     可根据效率及适用性由高到低排序
     """
+    if backupPreScreen and os.path.exists(capFileName):
+        os.rename(capFileName,capFileName+'.bak')
     if 1 <= SCREENSHOT_WAY <= 3:
         process = subprocess.Popen('adb shell screencap -p', shell=True, stdout=subprocess.PIPE)
         binary_screenshot = process.stdout.read()
@@ -115,16 +118,16 @@ if __name__ == "__main__":
             scS = extractShoutcut(src,s,320,300)
             if I > 0 and resm.canAdd():
                 res = getResidual(scS,scT)
-                resm.add(getDistance(olds,oldt),res,oldtm)
+                #resm.add(getDistance(olds,oldt),res,oldtm)
             scT = extractShoutcut(src,t,180,200)
             tm = resm.predict(getDistance(s,t))
             os.system('adb shell input swipe %d %d %d %d %d' % (pressX,pressY,pressX,pressY,tm))
             olds,oldt,oldtm = s,t,tm
             I = I + 1
         else:
-            pressX,pressY = 564,1593
-            os.system('adb shell input tap %d %d ' % (pressX,pressY))
-            I = 0
-            resm = PressTimerCalculator()
+            pass
+            #pressX,pressY = 564,1593
+            #os.system('adb shell input tap %d %d ' % (pressX,pressY))
+            #I = 0
+            #resm = PressTimerCalculator()
         time.sleep(1)
-        #time.sleep(1+np.random.ranf()*2)
