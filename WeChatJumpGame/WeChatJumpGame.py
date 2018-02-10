@@ -115,8 +115,7 @@ if __name__ == "__main__":
             scS = extractShoutcut(src,s,320,300)
             if I > 0 and resm.canAdd():
                 res = getResidual(scS,scT)
-                if abs(res) <= 50:
-                    resm.add(getDistance(olds,oldt),res,oldtm)
+                resm.add(getDistance(olds,oldt),res,oldtm)
             scT = extractShoutcut(src,t,180,200)
             tm = resm.predict(getDistance(s,t))
             os.system('adb shell input swipe %d %d %d %d %d' % (pressX,pressY,pressX,pressY,tm))

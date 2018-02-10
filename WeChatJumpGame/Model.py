@@ -11,6 +11,7 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation, MaxPooling2D, Reshape, Flatten
 import numpy as np
 import cv2
+import pandas as pd
 
 
 dataDir = './Data'
@@ -176,11 +177,3 @@ class FineModel(object):
         #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
         #self.m.save_weights('FineModelWeights.h5')
 
-if __name__=="__main__":
-    m1 = CoarseModel()
-    i=0
-    for f in m1.nextBatch(fileList):
-        i=i+1
-        if i>3:
-            break
-    pass
