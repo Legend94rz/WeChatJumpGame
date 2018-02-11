@@ -28,6 +28,10 @@ def pull_screenshot():
     可根据效率及适用性由高到低排序
     """
     if backupPreScreen and os.path.exists(capFileName):
+        try:
+            os.remove(capFileName+'.bak')
+        except:
+            pass
         os.rename(capFileName,capFileName+'.bak')
     if 1 <= SCREENSHOT_WAY <= 3:
         process = subprocess.Popen('adb shell screencap -p', shell=True, stdout=subprocess.PIPE)
@@ -118,7 +122,7 @@ if __name__ == "__main__":
             scS = extractShoutcut(src,s,320,300)
             if I > 0 and resm.canAdd():
                 res = getResidual(scS,scT)
-                #resm.add(getDistance(olds,oldt),res,oldtm)
+                resm.add(getDistance(olds,oldt),res,oldtm)
             scT = extractShoutcut(src,t,180,200)
             tm = resm.predict(getDistance(s,t))
             os.system('adb shell input swipe %d %d %d %d %d' % (pressX,pressY,pressX,pressY,tm))
