@@ -1,9 +1,9 @@
 import os
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import keras.backend as K
 import tensorflow as tf
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.3
+#config.gpu_options.per_process_gpu_memory_fraction = 0.3
 session = tf.Session(config = config)
 K.set_session(session)
 
@@ -12,6 +12,7 @@ from keras.layers import Dense, Conv2D, Dropout, BatchNormalization, Activation,
 import numpy as np
 import cv2
 import pandas as pd
+from keras.utils import plot_model
 
 
 dataDir = './Data'
@@ -63,7 +64,7 @@ class CoarseModel(object):
         self.m.add(Dense(2))
 
         self.m.compile(optimizer='adam',loss = 'mse',metrics = ['accuracy'])
-        #plot_model(self.m,'CoarseModel.png',show_shapes = True,show_layer_names = True)
+        plot_model(self.m,'CoarseModel.png',show_shapes = True,show_layer_names = True)
 
     def nextBatch(self, fileList):
         while True:
@@ -128,7 +129,7 @@ class FineModel(object):
         self.m.add(Dense(2))
 
         self.m.compile(optimizer = 'adam',loss = 'mse',metrics = ['accuracy'])
-        #plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
+        plot_model(self.m,'FineModel.png',show_shapes = True,show_layer_names = True)
 
     def nextBatch(self,fileList):
         while True:
@@ -177,3 +178,7 @@ class FineModel(object):
         #self.m.fit_generator(self.nextBatch(self.trainList),epochs = 100000, steps_per_epoch = 1, verbose = 2)
         #self.m.save_weights('FineModelWeights.h5')
 
+
+if __name__=="__main__":
+    m1 = CoarseModel()
+    m2 = FineModel()
