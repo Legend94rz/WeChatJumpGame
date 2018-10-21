@@ -15,6 +15,7 @@ import pandas as pd
 from keras.utils import plot_model
 
 
+
 dataDir = './Data'
 def initFileList():
     fileList = []
